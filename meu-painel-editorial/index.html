@@ -108,7 +108,7 @@
       max-width: 1650px;
       margin: 1.5rem auto 0 auto;
       width: calc(100% - 2rem);
-      transition: all 0.8s var(--transition-smooth);
+      transition: top 0.65s cubic-bezier(0.22, 1, 0.36, 1), padding 0.65s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.45s ease, box-shadow 0.65s cubic-bezier(0.22, 1, 0.36, 1), border-radius 0.65s cubic-bezier(0.22, 1, 0.36, 1);
     }
 
     @media (max-width: 768px) {
@@ -133,15 +133,15 @@
       align-items: center;
       gap: 1.2rem;
       width: 100%;
-      transition: all 0.8s var(--transition-smooth);
+      transition: gap 0.65s cubic-bezier(0.22, 1, 0.36, 1);
     }
 
     header.scrolled .header-content-wrapper {
-      flex-direction: row;
-      justify-content: space-between;
+      display: grid;
+      grid-template-columns: max-content minmax(0, 1fr);
       align-items: center;
-      gap: 1rem;
-      flex-wrap: nowrap;
+      column-gap: clamp(1.1rem, 2vw, 2.4rem);
+      width: 100%;
     }
 
     @media (max-width: 1024px) {
@@ -158,7 +158,7 @@
       text-align: center;
       gap: 0.6rem;
       flex-shrink: 0;
-      transition: all 0.8s var(--transition-smooth);
+      transition: gap 0.65s cubic-bezier(0.22, 1, 0.36, 1);
     }
 
     header.scrolled .brand-title-area-centered {
@@ -188,7 +188,7 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      transition: all 0.8s var(--transition-smooth);
+      transition: align-items 0.65s cubic-bezier(0.22, 1, 0.36, 1);
     }
 
     header.scrolled .brand-titles-large {
@@ -225,13 +225,18 @@
     .header-divider {
       width: 100%;
       height: 1px;
+      max-height: 1px;
+      opacity: 1;
+      overflow: hidden;
       background: rgba(0, 89, 79, 0.4);
       margin: 0.2rem 0 0.8rem 0;
-      transition: all 0.5s var(--transition-smooth);
+      transition: opacity 0.3s ease, max-height 0.45s var(--transition-smooth), margin 0.45s var(--transition-smooth);
     }
 
     header.scrolled .header-divider {
-      display: none;
+      opacity: 0;
+      max-height: 0;
+      margin: 0;
     }
 
     .header-toolbar-integrated {
@@ -241,15 +246,281 @@
       justify-content: center;
       flex-wrap: wrap;
       width: 100%;
-      transition: all 0.8s var(--transition-smooth);
+      transition: gap 0.65s cubic-bezier(0.22, 1, 0.36, 1);
     }
 
     header.scrolled .header-toolbar-integrated {
-      justify-content: flex-end;
-      flex-wrap: wrap;
-      flex: 1;
-      width: auto;
-      gap: 0.5rem;
+      display: grid;
+      grid-template-columns:
+        minmax(150px, 1.05fr)
+        minmax(130px, 0.95fr)
+        minmax(165px, 1.10fr)
+        minmax(180px, 1.15fr)
+        minmax(145px, 1fr)
+        minmax(56px, 0.38fr)
+        minmax(76px, 0.48fr);
+      align-items: center;
+      gap: clamp(0.45rem, 0.75vw, 0.8rem);
+      width: 100%;
+      min-width: 0;
+    }
+
+    /* No modo compacto, cada controle se adapta à largura interna do header.
+       Isso impede que filtros/botões ultrapassem a borda verde. */
+    header.scrolled .header-toolbar-integrated > * {
+      width: 100%;
+      min-width: 0 !important;
+      max-width: 100%;
+      flex: none;
+    }
+
+    header.scrolled .header-toolbar-integrated .input-field,
+    header.scrolled .header-toolbar-integrated .select-field,
+    header.scrolled .header-toolbar-integrated .btn-pill {
+      padding-left: clamp(0.65rem, 0.9vw, 1rem);
+      padding-right: clamp(0.65rem, 0.9vw, 1rem);
+      font-size: clamp(0.72rem, 0.72vw, 0.82rem);
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    header.scrolled .brand-title-area-centered {
+      max-width: 330px;
+    }
+
+    @media (max-width: 1350px) and (min-width: 1025px) {
+      header.scrolled .header-content-wrapper {
+        column-gap: 0.85rem;
+      }
+
+      header.scrolled .header-toolbar-integrated {
+        grid-template-columns:
+          minmax(132px, 1fr)
+          minmax(112px, 0.9fr)
+          minmax(142px, 1fr)
+          minmax(154px, 1.05fr)
+          minmax(128px, 0.95fr)
+          minmax(52px, 0.38fr)
+          minmax(68px, 0.45fr);
+        gap: 0.4rem;
+      }
+
+      header.scrolled .brand-titles-large h1 {
+        font-size: 1.22rem;
+      }
+
+      header.scrolled .brand-titles-large p {
+        font-size: 0.68rem;
+      }
+    }
+
+
+    /* =========================================================
+       HEADER COMPACTO RESPONSIVO — distribuição interna correta
+       Mantém o estado inicial intacto. Estas regras atuam apenas
+       quando o header recebe a classe .scrolled.
+       ========================================================= */
+    header.scrolled .header-content-wrapper {
+      position: relative;
+      display: grid;
+      grid-template-columns: minmax(215px, 0.9fr) minmax(0, 4.1fr);
+      grid-template-areas: "brand toolbar";
+      align-items: center;
+      gap: clamp(0.8rem, 1.35vw, 1.6rem);
+      width: 100%;
+      min-width: 0;
+    }
+
+    header.scrolled .brand-title-area-centered {
+      grid-area: brand;
+      min-width: 0;
+      max-width: none;
+      justify-self: start;
+    }
+
+    /* O divisor some visualmente, mas sai do fluxo do grid para não
+       ocupar uma célula e empurrar a toolbar para uma segunda linha. */
+    header.scrolled .header-divider {
+      position: absolute;
+      inset: auto 0 0 0;
+      width: 100%;
+      opacity: 0;
+      max-height: 0;
+      margin: 0;
+      pointer-events: none;
+    }
+
+    header.scrolled .header-toolbar-integrated {
+      grid-area: toolbar;
+      display: grid;
+      grid-template-columns:
+        minmax(0, 1.30fr)
+        minmax(0, 1.15fr)
+        minmax(0, 1.35fr)
+        minmax(0, 1.45fr)
+        minmax(0, 1.25fr)
+        minmax(54px, 0.48fr)
+        minmax(72px, 0.62fr);
+      align-items: center;
+      justify-content: stretch;
+      gap: clamp(0.42rem, 0.65vw, 0.75rem);
+      width: 100%;
+      min-width: 0;
+      max-width: 100%;
+    }
+
+    header.scrolled .header-toolbar-integrated > * {
+      width: 100%;
+      min-width: 0 !important;
+      max-width: 100%;
+      margin: 0;
+    }
+
+    header.scrolled .header-toolbar-integrated .input-field,
+    header.scrolled .header-toolbar-integrated .select-field,
+    header.scrolled .header-toolbar-integrated .btn-pill {
+      min-width: 0 !important;
+      width: 100%;
+      padding-left: clamp(0.55rem, 0.75vw, 0.9rem);
+      padding-right: clamp(0.55rem, 0.75vw, 0.9rem);
+      font-size: clamp(0.68rem, 0.72vw, 0.82rem);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    /* Desktop intermediário: preserva uma linha única, comprimindo
+       proporcionalmente marca, gaps e controles sem estourar a borda. */
+    @media (max-width: 1380px) and (min-width: 1181px) {
+      header.scrolled {
+        padding-left: 1rem;
+        padding-right: 1rem;
+      }
+
+      header.scrolled .header-content-wrapper {
+        grid-template-columns: minmax(190px, 0.78fr) minmax(0, 4.22fr);
+        gap: 0.7rem;
+      }
+
+      header.scrolled .brand-logo-badge-large {
+        width: 40px;
+        height: 40px;
+        font-size: 1rem;
+      }
+
+      header.scrolled .brand-titles-large h1 {
+        font-size: 1.08rem;
+      }
+
+      header.scrolled .brand-titles-large p {
+        font-size: 0.61rem;
+        letter-spacing: 0.08em;
+      }
+
+      header.scrolled .header-toolbar-integrated {
+        gap: 0.35rem;
+      }
+
+      header.scrolled .header-toolbar-integrated .input-field,
+      header.scrolled .header-toolbar-integrated .select-field,
+      header.scrolled .header-toolbar-integrated .btn-pill {
+        min-height: 36px;
+        padding-left: 0.5rem;
+        padding-right: 0.5rem;
+        font-size: 0.68rem;
+      }
+    }
+
+    /* Tablet / notebook estreito: a marca ocupa a primeira linha e os
+       controles usam toda a largura interna em uma grade equilibrada. */
+    @media (max-width: 1180px) {
+      header.scrolled .header-content-wrapper {
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-areas:
+          "brand"
+          "toolbar";
+        row-gap: 0.65rem;
+      }
+
+      header.scrolled .brand-title-area-centered {
+        justify-self: start;
+      }
+
+      header.scrolled .header-toolbar-integrated {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 0.5rem;
+      }
+    }
+
+    /* Tablet pequeno / celular em paisagem: 2 controles por linha. */
+    @media (max-width: 760px) {
+      header.scrolled {
+        top: 0.45rem;
+        padding: 0.7rem 0.8rem;
+        width: calc(100% - 0.7rem);
+      }
+
+      header.scrolled .brand-title-area-centered {
+        gap: 0.55rem;
+      }
+
+      header.scrolled .brand-logo-badge-large {
+        width: 36px;
+        height: 36px;
+        font-size: 0.95rem;
+      }
+
+      header.scrolled .brand-titles-large h1 {
+        font-size: 1rem;
+      }
+
+      header.scrolled .brand-titles-large p {
+        font-size: 0.58rem;
+      }
+
+      header.scrolled .header-toolbar-integrated {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.45rem;
+      }
+
+      header.scrolled .header-toolbar-integrated .btn-pill,
+      header.scrolled .header-toolbar-integrated .input-field,
+      header.scrolled .header-toolbar-integrated .select-field {
+        min-height: 38px;
+        font-size: 0.72rem;
+      }
+    }
+
+    /* Celular estreito: uma coluna; tudo continua contido na borda. */
+    @media (max-width: 430px) {
+      header.scrolled .header-toolbar-integrated {
+        grid-template-columns: minmax(0, 1fr);
+      }
+
+      header.scrolled .brand-title-area-centered {
+        width: 100%;
+      }
+    }
+
+    /* Movimento orgânico do cabeçalho: o JavaScript usa FLIP para animar
+       a troca real de layout vertical -> horizontal sem "teletransportar"
+       logo, título ou controles. */
+    .brand-logo-badge-large,
+    .brand-titles-large,
+    .header-toolbar-integrated {
+      will-change: transform;
+      transform-origin: center center;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      header,
+      .header-content-wrapper,
+      .brand-title-area-centered,
+      .brand-titles-large,
+      .header-divider,
+      .header-toolbar-integrated {
+        transition: none !important;
+      }
     }
 
     header.subpage-header {
@@ -433,6 +704,13 @@
       box-shadow: 0 0 25px rgba(0, 255, 102, 0.65), inset 0 1px 2px rgba(255, 255, 255, 0.5);
       text-shadow: 0 0 12px var(--neon-verde);
       transform: translateY(-2px);
+    }
+
+    .btn-pill.btn-mkt-send:disabled {
+      opacity: 0.55;
+      cursor: wait;
+      transform: none !important;
+      box-shadow: none;
     }
 
     main {
@@ -1345,31 +1623,153 @@
 
     let currentOpenArticleId = null;
     let initialDrawerContent = "";
+    let initialDrawerSnapshot = null;
     let undoStack = [];
     let lastAiCorrectedText = "";
-    let currentUserName = "Mauricio";
-    let isMarketingSending = false;
-    const MAX_EMAIL_PAYLOAD_BYTES = 4 * 1024 * 1024;
+    let currentUserName = "";
     let isDraftMaximized = false;
     let isDrawerMaximized = false;
+    let isSendingToMarketing = false;
+
+    function cloneArticleSnapshot(art) {
+      return JSON.parse(JSON.stringify({
+        title: art.title || '',
+        assignee: art.assignee || '',
+        dateWriting: art.dateWriting || '',
+        objective: art.objective || '',
+        content: art.content || '',
+        status: art.status || 'Não iniciado',
+        dateSend: art.dateSend || '',
+        sentBy: art.sentBy || '',
+        sentAt: art.sentAt || '',
+        keyPoints: art.keyPoints || [],
+        attachments: art.attachments || []
+      }));
+    }
+
+    function restoreArticleFromSnapshot(art, snapshot) {
+      if (!art || !snapshot) return;
+      art.title = snapshot.title;
+      art.assignee = snapshot.assignee;
+      art.dateWriting = snapshot.dateWriting;
+      art.objective = snapshot.objective;
+      art.content = snapshot.content;
+      art.status = snapshot.status;
+      art.dateSend = snapshot.dateSend;
+      art.sentBy = snapshot.sentBy;
+      art.sentAt = snapshot.sentAt;
+      art.keyPoints = JSON.parse(JSON.stringify(snapshot.keyPoints || []));
+      art.attachments = JSON.parse(JSON.stringify(snapshot.attachments || []));
+    }
+
+    function refreshAllViews() {
+      updateHeaderProgress();
+      renderCategories();
+      renderArticles();
+      renderManagementTable();
+    }
 
     window.addEventListener('DOMContentLoaded', async () => {
-      checkUserIdentification();
       await loadAppData();
       renderCategories();
       initMeshGradient();
 
-      window.addEventListener('scroll', () => {
+      let ticking = false;
+      let headerCompact = false;
+      let headerTransitioning = false;
+
+      function animateHeaderLayout(compact) {
         const header = document.getElementById('main-header');
-        const isHome = document.getElementById('screen-categories').classList.contains('active');
-        if (isHome) {
-          if (window.scrollY > 40) {
-            header.classList.add('scrolled');
-          } else {
-            header.classList.remove('scrolled');
-          }
+        if (!header || headerTransitioning) return;
+
+        // Em telas menores mantemos o layout responsivo normal.
+        if (window.innerWidth <= 1024 || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+          header.classList.toggle('scrolled', compact);
+          return;
         }
-      });
+
+        headerTransitioning = true;
+
+        const movingElements = [
+          header.querySelector('.brand-logo-badge-large'),
+          header.querySelector('.brand-titles-large'),
+          header.querySelector('.header-toolbar-integrated')
+        ].filter(Boolean);
+
+        // FIRST: posições antes da mudança de layout.
+        const firstHeader = header.getBoundingClientRect();
+        const firstRects = new Map(movingElements.map(el => [el, el.getBoundingClientRect()]));
+
+        // Troca para o estado estrutural final (vertical ou horizontal).
+        header.classList.toggle('scrolled', compact);
+
+        // LAST: posições finais já calculadas pelo navegador.
+        const lastHeader = header.getBoundingClientRect();
+        const lastRects = new Map(movingElements.map(el => [el, el.getBoundingClientRect()]));
+
+        const duration = 720;
+        const easing = 'cubic-bezier(0.22, 1, 0.36, 1)';
+
+        // Anima a altura do próprio painel para ele comprimir/expandir sem tranco.
+        header.animate([
+          { height: `${firstHeader.height}px` },
+          { height: `${lastHeader.height}px` }
+        ], { duration, easing });
+
+        // FLIP: cada elemento começa visualmente onde estava e desliza até
+        // sua nova posição. É isso que faz o logo "viajar" suavemente.
+        movingElements.forEach(el => {
+          const first = firstRects.get(el);
+          const last = lastRects.get(el);
+          const dx = first.left - last.left;
+          const dy = first.top - last.top;
+
+          el.getAnimations().forEach(animation => animation.cancel());
+          el.animate([
+            { transform: `translate3d(${dx}px, ${dy}px, 0)`, opacity: 0.96 },
+            { transform: 'translate3d(0, 0, 0)', opacity: 1 }
+          ], { duration, easing, fill: 'both' });
+        });
+
+        // O divisor some/aparece junto com o movimento, em vez de cortar seco.
+        const divider = header.querySelector('.header-divider');
+        if (divider) {
+          divider.animate(
+            compact
+              ? [{ opacity: 1 }, { opacity: 0 }]
+              : [{ opacity: 0 }, { opacity: 1 }],
+            { duration: 420, easing: 'ease-out' }
+          );
+        }
+
+        window.setTimeout(() => {
+          headerTransitioning = false;
+        }, duration + 40);
+      }
+
+      window.addEventListener('scroll', () => {
+        if (ticking) return;
+        ticking = true;
+
+        requestAnimationFrame(() => {
+          const header = document.getElementById('main-header');
+          const isHome = document.getElementById('screen-categories').classList.contains('active');
+
+          if (isHome && header) {
+            // Histerese: compacta depois de 100px e só volta ao topo abaixo de 35px.
+            // Isso evita ficar alternando perto do ponto de corte.
+            if (!headerCompact && window.scrollY > 100) {
+              headerCompact = true;
+              animateHeaderLayout(true);
+            } else if (headerCompact && window.scrollY < 35) {
+              headerCompact = false;
+              animateHeaderLayout(false);
+            }
+          }
+
+          ticking = false;
+        });
+      }, { passive: true });
     });
 
     function checkUserIdentification() {
@@ -1471,9 +1871,11 @@
         const art = appData.articles.find(a => a.id === currentOpenArticleId);
         if (art) {
           try {
-            await _supabase.from('articles').update(formatArticleForDb(art)).eq('id', art.id);
+            const { error } = await _supabase.from('articles').update(formatArticleForDb(art)).eq('id', art.id);
+            if (error) throw error;
           } catch (e) {
             console.error("Erro ao atualizar no Supabase", e);
+            throw e;
           }
         }
       }
@@ -1486,21 +1888,16 @@
         body: JSON.stringify(art)
       });
 
-      let result = {};
+      let payload = {};
       try {
-        result = await response.json();
-      } catch (_) {
-        result = {};
+        payload = await response.json();
+      } catch (_) {}
+
+      if (!response.ok || payload.success === false) {
+        throw new Error(payload.error || 'Falha ao enviar o e-mail ao Marketing.');
       }
 
-      if (!response.ok || !result.success) {
-        if (response.status === 413) {
-          throw new Error('O artigo e os anexos ultrapassam o limite permitido para envio. Reduza o tamanho ou a quantidade de anexos.');
-        }
-        throw new Error(result.error || `Falha no envio do e-mail (HTTP ${response.status}).`);
-      }
-
-      return result;
+      return payload;
     }
 
     function updateHeaderProgress() {
@@ -2034,26 +2431,7 @@
       }
     }
 
-    function setMarketingSendState(sending) {
-      isMarketingSending = sending;
-      const btn = document.getElementById('btn-send-marketing');
-      if (!btn) return;
-
-      btn.disabled = sending;
-      btn.style.opacity = sending ? '0.65' : '';
-      btn.style.cursor = sending ? 'wait' : '';
-      btn.innerHTML = sending ? 'Enviando...' : '🚀 Enviar para o Marketing';
-    }
-
     function handleActionWithMinimize(actionType) {
-      if (actionType === 'send') {
-        if (isMarketingSending) {
-          showToast('Envio já está em andamento.');
-          return;
-        }
-        setMarketingSendState(true);
-      }
-
       if (isDraftMaximized) toggleMaximizeDraft();
       if (isDrawerMaximized) toggleMaximizeDrawer();
 
@@ -2071,6 +2449,8 @@
       const art = appData.articles.find(a => a.id === id);
       if (!art) return;
 
+      initialDrawerSnapshot = cloneArticleSnapshot(art);
+
       if (isDraftMaximized) toggleMaximizeDraft();
       if (isDrawerMaximized) toggleMaximizeDrawer();
 
@@ -2080,9 +2460,6 @@
 
       document.getElementById('drawer-input-title').value = art.title || '';
       
-      if (art.status === "Não iniciado") {
-        art.assignee = "";
-      }
       document.getElementById('drawer-input-assignee').value = art.assignee || '';
 
       document.getElementById('drawer-input-date-writing').value = art.dateWriting || '';
@@ -2123,20 +2500,19 @@
       const currentAssignee = document.getElementById('drawer-input-assignee').value;
       const currentWritingDate = document.getElementById('drawer-input-date-writing').value;
 
+      const base = initialDrawerSnapshot || cloneArticleSnapshot(art);
       const hasChanged = 
-        currentContent !== (art.content || '').trim() ||
-        currentTitle !== (art.title || '').trim() ||
-        currentObjective !== (art.objective || '').trim() ||
-        currentAssignee !== (art.assignee || '') ||
-        currentWritingDate !== (art.dateWriting || '');
+        currentContent !== (base.content || '').trim() ||
+        currentTitle !== (base.title || '').trim() ||
+        currentObjective !== (base.objective || '').trim() ||
+        currentAssignee !== (base.assignee || '') ||
+        currentWritingDate !== (base.dateWriting || '') ||
+        JSON.stringify(art.attachments || []) !== JSON.stringify(base.attachments || []) ||
+        JSON.stringify(art.keyPoints || []) !== JSON.stringify(base.keyPoints || []);
 
       if (hasChanged) {
         showCloseConfirmationModal();
       } else {
-        if (!art.content.trim() && art.status !== 'Concluído') {
-          art.status = 'Não iniciado';
-          saveAppData();
-        }
         forceCloseDrawer();
       }
     }
@@ -2157,20 +2533,19 @@
       document.getElementById('custom-modal-overlay').classList.add('active');
     }
 
-    window.resolveCloseAction = function(action) {
+    window.resolveCloseAction = async function(action) {
       document.getElementById('custom-modal-overlay').classList.remove('active');
       const art = appData.articles.find(a => a.id === currentOpenArticleId);
-      if (art) {
-        if (action === 'save') {
-          saveCurrentDrawerArticle(false);
-          showToast('💾 Artigo salvo com sucesso.');
-          forceCloseDrawer();
-        } else if (action === 'nosave') {
-          art.content = initialDrawerContent;
-          saveAppData();
-          showToast('🔄 Alterações descartadas.');
-          forceCloseDrawer();
-        }
+      if (!art) return;
+
+      if (action === 'save') {
+        await saveCurrentDrawerArticle(false);
+        showToast('💾 Artigo salvo com sucesso.');
+        forceCloseDrawer();
+      } else if (action === 'nosave') {
+        restoreArticleFromSnapshot(art, initialDrawerSnapshot);
+        showToast('🔄 Alterações descartadas.');
+        forceCloseDrawer();
       }
     };
 
@@ -2182,7 +2557,8 @@
       document.getElementById('article-drawer').classList.remove('open', 'origami-prep', 'zoom-out-recede');
       document.getElementById('drawer-origami-overlay').classList.remove('active', 'fold-step-1', 'fold-step-2', 'fold-step-3', 'fold-step-4', 'fold-step-5');
       currentOpenArticleId = null;
-      renderCategories();
+      initialDrawerSnapshot = null;
+      refreshAllViews();
     }
 
     function resetField(fieldId) {
@@ -2233,9 +2609,9 @@
         });
       }
 
-      saveAppData();
       renderDrawerKeyPoints(art);
-      showToast('🔄 Texto e artigo reiniciados com sucesso!');
+      onDrawerInputChanged();
+      showToast('🔄 Texto restaurado. Salve para confirmar a alteração.');
     }
 
     function pushUndoState() {
@@ -2256,7 +2632,14 @@
 
     function onDrawerInputChanged() {
       pushUndoState();
-      saveCurrentDrawerArticleSilent();
+
+      const content = document.getElementById('drawer-article-content').value.trim();
+      const statusField = document.getElementById('drawer-input-status');
+      const art = appData.articles.find(a => a.id === currentOpenArticleId);
+
+      if (art && art.status !== 'Concluído') {
+        statusField.value = content ? 'Não finalizado' : 'Não iniciado';
+      }
     }
 
     function renderDrawerKeyPoints(art) {
@@ -2308,7 +2691,6 @@
             type: file.type,
             dataUrl: e.target.result
           });
-          saveAppData();
           renderAttachments(art);
         };
         reader.readAsDataURL(file);
@@ -2351,16 +2733,15 @@
       const art = appData.articles.find(a => a.id === artId);
       if (art && art.attachments) {
         art.attachments = art.attachments.filter(a => a.id !== attId);
-        await saveAppData();
         renderAttachments(art);
         showToast('🗑️ Anexo removido!');
       }
     }
 
-    function saveCurrentDrawerArticleSilent() {
-      if (!currentOpenArticleId) return;
+    async function saveCurrentDrawerArticleSilent() {
+      if (!currentOpenArticleId) return false;
       const art = appData.articles.find(a => a.id === currentOpenArticleId);
-      if (!art) return;
+      if (!art) return false;
 
       art.title = document.getElementById('drawer-input-title').value;
       art.assignee = document.getElementById('drawer-input-assignee').value;
@@ -2378,56 +2759,66 @@
         }
       }
 
-      saveAppData();
+      await saveAppData();
+      initialDrawerSnapshot = cloneArticleSnapshot(art);
+      refreshAllViews();
+      return true;
     }
 
-    function saveCurrentDrawerArticle(showNotification = true) {
-      saveCurrentDrawerArticleSilent();
-      if (showNotification) showToast('💾 Artigo salvo com sucesso.');
+    async function saveCurrentDrawerArticle(showNotification = true) {
+      const saved = await saveCurrentDrawerArticleSilent();
+      if (saved && showNotification) showToast('💾 Artigo salvo com sucesso.');
+      return saved;
     }
 
     async function sendToMarketingWithEnvelopeAnimation() {
-      if (!currentOpenArticleId) {
-        setMarketingSendState(false);
-        return;
-      }
-
+      if (!currentOpenArticleId || isSendingToMarketing) return;
       const art = appData.articles.find(a => a.id === currentOpenArticleId);
-      if (!art) {
-        setMarketingSendState(false);
+      if (!art) return;
+
+      art.title = document.getElementById('drawer-input-title').value;
+      art.assignee = document.getElementById('drawer-input-assignee').value;
+      art.dateWriting = document.getElementById('drawer-input-date-writing').value;
+      art.objective = document.getElementById('drawer-input-objective').value;
+      art.content = document.getElementById('drawer-article-content').value;
+
+      if (!art.assignee) {
+        showToast('⚠️ Selecione o autor do artigo antes de enviar para o Marketing.');
         return;
       }
 
-      const emailPayload = {
-        ...art,
-        title: document.getElementById('drawer-input-title').value,
-        assignee: document.getElementById('drawer-input-assignee').value,
-        dateWriting: document.getElementById('drawer-input-date-writing').value,
-        objective: document.getElementById('drawer-input-objective').value,
-        content: document.getElementById('drawer-article-content').value,
-        status: 'Concluído',
-        dateSend: new Date().toISOString().slice(0, 10),
-        sentBy: currentUserName,
-        sentAt: new Date().toLocaleString('pt-BR')
-      };
+      const beforeSendSnapshot = cloneArticleSnapshot(art);
+      const sendButton = document.getElementById('btn-send-marketing');
+      const originalButtonHtml = sendButton ? sendButton.innerHTML : '';
 
-      const payloadBytes = new Blob([JSON.stringify(emailPayload)]).size;
-      if (payloadBytes > MAX_EMAIL_PAYLOAD_BYTES) {
-        setMarketingSendState(false);
-        showToast('Arquivo(s) muito grande(s) para envio. Reduza o tamanho ou a quantidade de anexos.');
-        return;
+      isSendingToMarketing = true;
+      if (sendButton) {
+        sendButton.disabled = true;
+        sendButton.innerHTML = '⏳ Enviando...';
       }
+
+      art.status = 'Concluído';
+      document.getElementById('drawer-input-status').value = 'Concluído';
+      art.dateSend = new Date().toISOString().slice(0, 10);
+      art.sentBy = art.assignee;
+      art.sentAt = new Date().toLocaleString('pt-BR');
 
       try {
-        await triggerMarketingEmail(emailPayload);
-
-        Object.assign(art, emailPayload);
-        document.getElementById('drawer-input-status').value = 'Concluído';
+        await triggerMarketingEmail(art);
         await saveAppData();
+        initialDrawerSnapshot = cloneArticleSnapshot(art);
+        refreshAllViews();
       } catch (error) {
-        console.error('Falha ao enviar para o marketing:', error);
-        setMarketingSendState(false);
-        showToast(`Falha no envio: ${error.message}`);
+        console.error('Erro no envio para o Marketing:', error);
+        restoreArticleFromSnapshot(art, beforeSendSnapshot);
+        document.getElementById('drawer-input-status').value = art.status || 'Não iniciado';
+        refreshAllViews();
+        showToast(`⚠️ ${error.message}`);
+        isSendingToMarketing = false;
+        if (sendButton) {
+          sendButton.disabled = false;
+          sendButton.innerHTML = originalButtonHtml;
+        }
         return;
       }
 
@@ -2458,8 +2849,14 @@
         overlay.classList.remove('active', 'fold-step-1', 'fold-step-2', 'fold-step-3', 'fold-step-4', 'fold-step-5');
         drawer.style.transform = '';
 
-        closeArticleDrawer();
-        setMarketingSendState(false);
+        forceCloseDrawer();
+        refreshAllViews();
+
+        isSendingToMarketing = false;
+        if (sendButton) {
+          sendButton.disabled = false;
+          sendButton.innerHTML = originalButtonHtml;
+        }
 
         showCustomModal(
           'Enviado para o Marketing!',
@@ -2563,8 +2960,8 @@
         kp.verified = abordado;
       });
 
-      await saveAppData();
       renderDrawerKeyPoints(art);
+      onDrawerInputChanged();
 
       feedbackBox.innerHTML = `
         <div class="ai-response-card" id="ai-response-message-card">
