@@ -1259,7 +1259,7 @@
           <button class="btn-pill gold" style="padding: 0.5rem 1.1rem;" onclick="handleActionWithMinimize('save')">💾 Salvar</button>
           <button class="btn-pill gold" style="padding: 0.5rem 1.1rem;" onclick="handleActionWithMinimize('review')">🪄 Revisar com IA</button>
           <button class="btn-pill gold" style="padding: 0.5rem 1.1rem;" onclick="handleActionWithMinimize('checklist')">🤖 Check-in de Pontos (IA)</button>
-          <button class="btn-pill btn-mkt-send" style="padding: 0.5rem 1.1rem;" onclick="handleActionWithMinimize('send')">🚀 Enviar para o Marketing</button>
+          <button class="btn-pill btn-mkt-send" id="btn-send-marketing" style="padding: 0.5rem 1.1rem;" onclick="handleActionWithMinimize('send')">🚀 Enviar para o Marketing</button>
         </div>
       </div>
     </div>
@@ -1348,6 +1348,8 @@
     let undoStack = [];
     let lastAiCorrectedText = "";
     let currentUserName = "Mauricio";
+    let isMarketingSending = false;
+    const MAX_EMAIL_PAYLOAD_BYTES = 4 * 1024 * 1024;
     let isDraftMaximized = false;
     let isDrawerMaximized = false;
 
@@ -1478,15 +1480,27 @@
     }
 
     async function triggerMarketingEmail(art) {
+      const response = await fetch('/api/enviar-marketing', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(art)
+      });
+
+      let result = {};
       try {
-        await fetch('/api/enviar-marketing', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(art)
-        });
-      } catch (e) {
-        console.error("Erro ao enviar e-mail ao marketing", e);
+        result = await response.json();
+      } catch (_) {
+        result = {};
       }
+
+      if (!response.ok || !result.success) {
+        if (response.status === 413) {
+          throw new Error('O artigo e os anexos ultrapassam o limite permitido para envio. Reduza o tamanho ou a quantidade de anexos.');
+        }
+        throw new Error(result.error || `Falha no envio do e-mail (HTTP ${response.status}).`);
+      }
+
+      return result;
     }
 
     function updateHeaderProgress() {
@@ -2020,7 +2034,26 @@
       }
     }
 
+    function setMarketingSendState(sending) {
+      isMarketingSending = sending;
+      const btn = document.getElementById('btn-send-marketing');
+      if (!btn) return;
+
+      btn.disabled = sending;
+      btn.style.opacity = sending ? '0.65' : '';
+      btn.style.cursor = sending ? 'wait' : '';
+      btn.innerHTML = sending ? 'Enviando...' : '🚀 Enviar para o Marketing';
+    }
+
     function handleActionWithMinimize(actionType) {
+      if (actionType === 'send') {
+        if (isMarketingSending) {
+          showToast('Envio já está em andamento.');
+          return;
+        }
+        setMarketingSendState(true);
+      }
+
       if (isDraftMaximized) toggleMaximizeDraft();
       if (isDrawerMaximized) toggleMaximizeDrawer();
 
@@ -2354,23 +2387,49 @@
     }
 
     async function sendToMarketingWithEnvelopeAnimation() {
-      if (!currentOpenArticleId) return;
-      const art = appData.articles.find(a => a.id === currentOpenArticleId);
-      if (!art) return;
+      if (!currentOpenArticleId) {
+        setMarketingSendState(false);
+        return;
+      }
 
-      art.title = document.getElementById('drawer-input-title').value;
-      art.assignee = document.getElementById('drawer-input-assignee').value;
-      art.dateWriting = document.getElementById('drawer-input-date-writing').value;
-      art.objective = document.getElementById('drawer-input-objective').value;
-      art.content = document.getElementById('drawer-article-content').value;
-      art.status = "Concluído";
-      document.getElementById('drawer-input-status').value = "Concluído";
-      art.dateSend = new Date().toISOString().slice(0, 10);
-      art.sentBy = currentUserName;
-      art.sentAt = new Date().toLocaleString('pt-BR');
-      
-      await saveAppData();
-      await triggerMarketingEmail(art);
+      const art = appData.articles.find(a => a.id === currentOpenArticleId);
+      if (!art) {
+        setMarketingSendState(false);
+        return;
+      }
+
+      const emailPayload = {
+        ...art,
+        title: document.getElementById('drawer-input-title').value,
+        assignee: document.getElementById('drawer-input-assignee').value,
+        dateWriting: document.getElementById('drawer-input-date-writing').value,
+        objective: document.getElementById('drawer-input-objective').value,
+        content: document.getElementById('drawer-article-content').value,
+        status: 'Concluído',
+        dateSend: new Date().toISOString().slice(0, 10),
+        sentBy: currentUserName,
+        sentAt: new Date().toLocaleString('pt-BR')
+      };
+
+      const payloadBytes = new Blob([JSON.stringify(emailPayload)]).size;
+      if (payloadBytes > MAX_EMAIL_PAYLOAD_BYTES) {
+        setMarketingSendState(false);
+        showToast('Arquivo(s) muito grande(s) para envio. Reduza o tamanho ou a quantidade de anexos.');
+        return;
+      }
+
+      try {
+        await triggerMarketingEmail(emailPayload);
+
+        Object.assign(art, emailPayload);
+        document.getElementById('drawer-input-status').value = 'Concluído';
+        await saveAppData();
+      } catch (error) {
+        console.error('Falha ao enviar para o marketing:', error);
+        setMarketingSendState(false);
+        showToast(`Falha no envio: ${error.message}`);
+        return;
+      }
 
       if (isDraftMaximized) toggleMaximizeDraft();
       if (isDrawerMaximized) toggleMaximizeDrawer();
@@ -2382,14 +2441,14 @@
       drawer.classList.add('origami-prep');
       overlay.classList.add('active');
 
-      setTimeout(() => { overlay.classList.add('fold-step-1'); }, 400);   
-      setTimeout(() => { overlay.classList.add('fold-step-2'); }, 1300);  
-      setTimeout(() => { overlay.classList.add('fold-step-3'); }, 2200);  
-      setTimeout(() => { overlay.classList.add('fold-step-4'); }, 3100);  
-      setTimeout(() => { overlay.classList.add('fold-step-5'); }, 4000);  
+      setTimeout(() => { overlay.classList.add('fold-step-1'); }, 400);
+      setTimeout(() => { overlay.classList.add('fold-step-2'); }, 1300);
+      setTimeout(() => { overlay.classList.add('fold-step-3'); }, 2200);
+      setTimeout(() => { overlay.classList.add('fold-step-4'); }, 3100);
+      setTimeout(() => { overlay.classList.add('fold-step-5'); }, 4000);
 
-      setTimeout(() => { 
-        drawer.classList.add('zoom-out-recede'); 
+      setTimeout(() => {
+        drawer.classList.add('zoom-out-recede');
       }, 5000);
 
       setTimeout(() => {
@@ -2400,6 +2459,7 @@
         drawer.style.transform = '';
 
         closeArticleDrawer();
+        setMarketingSendState(false);
 
         showCustomModal(
           'Enviado para o Marketing!',
