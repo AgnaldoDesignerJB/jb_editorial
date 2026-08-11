@@ -30,16 +30,33 @@ export default async function handler(req, res) {
       });
     }
 
-    // Monta os anexos no formato usado pelo Resend
-    const formattedAttachments = (attachments || []).map(att => ({
-      filename: att.name,
-      path: att.dataUrl
-    }));
+    // Converte os anexos em Base64 puro para o formato aceito pelo Resend
+    const formattedAttachments = (attachments || []).map(att => {
+      if (!att?.name || !att?.dataUrl) {
+        throw new Error('Anexo inválido ou incompleto');
+      }
+
+      // Remove o prefixo:
+      // data:image/png;base64,
+      // data:application/pdf;base64,
+      // etc.
+      const commaIndex = att.dataUrl.indexOf(',');
+
+      const base64Content =
+        commaIndex >= 0
+          ? att.dataUrl.slice(commaIndex + 1)
+          : att.dataUrl;
+
+      return {
+        filename: att.name,
+        content: base64Content
+      };
+    });
 
     const { data, error } = await resend.emails.send({
       from: 'Editorial Joia Bank <onboarding@resend.dev>',
 
-      // Conta utilizada para receber os testes do painel
+      // E-mail usado atualmente para os testes
       to: ['design.alphaminerals@gmail.com'],
 
       subject: `[Marketing] Novo Artigo Concluído: ${title}`,
@@ -89,7 +106,7 @@ export default async function handler(req, res) {
       attachments: formattedAttachments
     });
 
-    // O Resend pode devolver um erro sem lançar exception
+    // O Resend pode retornar erro sem lançar exception
     if (error) {
       console.error('Erro retornado pelo Resend:', error);
 
