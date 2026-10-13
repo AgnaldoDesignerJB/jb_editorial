@@ -5505,6 +5505,9 @@
               .eq('id', art.id);
             if (error) throw error;
 
+            // Marca a escrita como nossa para ignorar o eco do Realtime.
+            recentLocalWrites.set(art.id, Date.now());
+
             if (hasUpdatedAtColumn) {
               art.updatedAt = stamp;
               lastKnownRemoteUpdate.set(art.id, stamp);
@@ -5524,6 +5527,12 @@
        ================================================================= */
     const lastKnownRemoteUpdate = new Map();
     let realtimeChannel = null;
+
+    /* Gravacoes feitas por ESTE cliente, por id. O Realtime devolve um
+       evento para quem gravou; sem isso o app reprocessa a propria
+       escrita e disputa com a edicao que ainda esta em andamento. */
+    const recentLocalWrites = new Map();
+    const SELF_ECHO_MS = 4000;
 
     /* A deteccao de conflito depende de uma coluna `updated_at` na tabela
        `articles`. Ela e opcional: se nao existir, o app funciona igual,
@@ -5575,6 +5584,20 @@
       const incoming = mapDbArticle(row);
       const idx = appData.articles.findIndex(a => a.id === incoming.id);
 
+      // Eco da nossa propria gravacao: nada a aplicar. So ignoramos
+      // quando o que chegou confere com o que ja temos em memoria, para
+      // nao descartar a edicao de outra pessoa feita no mesmo instante.
+      const escritaNossa = recentLocalWrites.get(incoming.id);
+      if (escritaNossa && Date.now() - escritaNossa < SELF_ECHO_MS) {
+        recentLocalWrites.delete(incoming.id);
+        const local = idx >= 0 ? appData.articles[idx] : null;
+        if (local
+            && (local.content || '') === (incoming.content || '')
+            && (local.status || '') === (incoming.status || '')) {
+          return;
+        }
+      }
+
       // O artigo aberto no editor nao e sobrescrito: avisamos e deixamos
       // a pessoa decidir, em vez de apagar o que ela esta digitando.
       if (currentOpenArticleId === incoming.id) {
@@ -5588,7 +5611,12 @@
         }
       }
 
-      if (idx >= 0) appData.articles[idx] = incoming;
+      // ATUALIZA EM LUGAR. Trocar o objeto (appData.articles[idx] = incoming)
+      // invalidava silenciosamente qualquer referencia ja capturada - o fluxo
+      // de envio ao marketing, o autosave e o drawer aberto passavam a
+      // escrever num objeto fora do array, e o status "Concluido" nunca
+      // chegava ao banco embora o e-mail fosse enviado.
+      if (idx >= 0) Object.assign(appData.articles[idx], incoming);
       else appData.articles.push(incoming);
       refreshAllViews();
     }
@@ -5621,7 +5649,7 @@
     function applyPendingRemoteArticle() {
       if (!pendingRemoteArticle) return;
       const idx = appData.articles.findIndex(a => a.id === pendingRemoteArticle.id);
-      if (idx >= 0) appData.articles[idx] = pendingRemoteArticle;
+      if (idx >= 0) Object.assign(appData.articles[idx], pendingRemoteArticle);
       const id = pendingRemoteArticle.id;
       hideSyncBanner();
       openArticleDrawer(id);
@@ -6983,7 +7011,7 @@
 
     async function sendToMarketingWithEnvelopeAnimation() {
       if (!currentOpenArticleId || isSendingToMarketing) return;
-      const art = appData.articles.find(a => a.id === currentOpenArticleId);
+      let art = appData.articles.find(a => a.id === currentOpenArticleId);
       if (!art) return;
 
       // Sempre captura o que está visível no editor antes de qualquer outra ação.
@@ -7056,6 +7084,13 @@
       }
 
       const savedBeforeSendSnapshot = cloneArticleSnapshot(art);
+
+      // Re-resolve o artigo pelo id: garante que as atribuicoes abaixo caiam
+      // no objeto que realmente esta em appData.articles, mesmo que algo o
+      // tenha substituido durante o await do salvamento acima.
+      const alvo = appData.articles.find(a => a.id === currentOpenArticleId) || art;
+      if (alvo !== art) Object.assign(alvo, art);
+      art = alvo;
 
       // Prepara os dados finais do envio.
       art.status = 'Concluído';
